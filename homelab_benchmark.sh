@@ -17,6 +17,37 @@ DISK_DEVICE_HINT=""                   # Optional: specific device like "/dev/nvm
 SUDO_NOPASS=true                     # Set to false if sudo requires password
 NON_DESTRUCTIVE_ONLY=true            # MUST remain true for safety
 
+# CLI flags
+DRY_RUN=false
+INSTALL_TOOLS=false
+AUTO_YES=false
+
+while [[ ${1:-} != "" ]]; do
+    case "$1" in
+        --dry-run) DRY_RUN=true; shift ;;
+        --install-tools) INSTALL_TOOLS=true; shift ;;
+        --yes|-y) AUTO_YES=true; shift ;;
+        *) break ;;
+    esac
+done
+
+safe_echo() { if [[ "$DRY_RUN" == "true" ]]; then echo "DRY-RUN: $*"; else echo "$*"; fi }
+
+# Validate host name and IP/host
+validate_host() {
+    local name="$1" ip="$2"
+    if [[ ! "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+        error "Invalid host name: $name"
+        return 1
+    fi
+    # Basic IPv4 check or hostname (very permissive)
+    if [[ -z "$ip" ]]; then
+        error "Empty IP/hostname for $name"
+        return 1
+    fi
+    return 0
+}
+
 # Directories
 RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
 LOGS_DIR="$RESULTS_DIR/logs"
@@ -436,11 +467,10 @@ run_network_benchmarks() {
         return 1
     fi
     
-    # Start iperf3 server
+    # Start iperf3 server using PID file to avoid indiscriminate pkill
     log "Starting iperf3 server on $server_name"
-    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "pkill iperf3 2>/dev/null || true; iperf3 -s -D" > "$LOGS_DIR/iperf_server.log" 2>&1
-    
-    sleep 2  # Give server time to start
+    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "mkdir -p ~/homelab_bench && pkill -f 'iperf3 -s' 2>/dev/null || true; iperf3 -s -D --logfile ~/homelab_bench/iperf3_server.log && echo \$! > ~/homelab_bench/iperf3.pid" > "$LOGS_DIR/iperf_server.log" 2>&1 || true
+    sleep 2
     
     # Run client tests from each host
     for host_config in "${HOSTS[@]}"; do
@@ -471,9 +501,9 @@ run_network_benchmarks() {
         fi
     done
     
-    # Stop iperf3 server
+    # Stop iperf3 server by PID if available
     log "Stopping iperf3 server"
-    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "pkill iperf3 2>/dev/null || true" >> "$LOGS_DIR/iperf_server.log" 2>&1
+    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "if [[ -f ~/homelab_bench/iperf3.pid ]]; then kill \$(cat ~/homelab_bench/iperf3.pid) 2>/dev/null || true; rm -f ~/homelab_bench/iperf3.pid; fi" >> "$LOGS_DIR/iperf_server.log" 2>&1 || true
 }
 
 # Generate reports
@@ -824,6 +854,10 @@ main() {
     local reachable_hosts=()
     for host_config in "${HOSTS[@]}"; do
         read -r name ip key user <<< "$(parse_host "$host_config")"
+        if ! validate_host "$name" "$ip"; then
+            warn "Skipping invalid host entry: $host_config"
+            continue
+        fi
         if test_ssh "$name" "$ip" "$key" "$user"; then
             reachable_hosts+=("$host_config")
         fi
