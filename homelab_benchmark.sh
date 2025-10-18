@@ -5,15 +5,17 @@
 
 set -euo pipefail
 
-# Configuration
+# Configuration - EDIT THESE VALUES
 HOSTS=(
-  "machineA|192.168.0.185|"
-  "machineB|192.168.0.160|"
+  "machineA|192.168.0.185||luis"     # Format: "name|ip|ssh_key_path|username"
+  "machineB|192.168.0.160||luis"     # Leave ssh_key_path empty to use default key
+  # "server1|10.0.0.10|/home/luis/.ssh/custom_key|admin"
+  # "nas|192.168.1.100||root"
 )
-IPERF_SERVER_HOST="machineA"
-DISK_DEVICE_HINT=""
-SUDO_NOPASS=true
-NON_DESTRUCTIVE_ONLY=true
+IPERF_SERVER_HOST="machineA"           # Which host will run the iperf3 server
+DISK_DEVICE_HINT=""                   # Optional: specific device like "/dev/nvme0n1"
+SUDO_NOPASS=true                     # Set to false if sudo requires password
+NON_DESTRUCTIVE_ONLY=true            # MUST remain true for safety
 
 # Directories
 RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
