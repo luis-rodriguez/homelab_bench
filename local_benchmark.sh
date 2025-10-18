@@ -11,6 +11,18 @@ SUDO_NOPASS=true
 NON_DESTRUCTIVE_ONLY=true
 RUN_SENSORS_DETECT=false   # set to true to run sensors-detect interactively (NOT recommended)
 
+# CLI flags
+INSTALL_TOOLS=false
+AUTO_YES=false
+while [[ ${1:-} != "" ]]; do
+    case "$1" in
+        --install-tools) INSTALL_TOOLS=true; shift ;;
+        --yes|-y) AUTO_YES=true; shift ;;
+        --dry-run) DRY_RUN=true; shift ;;
+        *) break ;;
+    esac
+done
+
 # Directories
 RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
 LOGS_DIR="$RESULTS_DIR/logs"
@@ -99,32 +111,64 @@ install_tools() {
     
     case "$pm" in
         "apt")
-            if sudo -n true 2>/dev/null; then
-                sudo apt-get update -qq
-                sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+            if [[ "$INSTALL_TOOLS" != "true" ]]; then
+                log "INSTALL_TOOLS not enabled; skipping package installation"
             else
-                warn "sudo not available non-interactively; skip package installation or run with passwordless sudo"
+                if sudo -n true 2>/dev/null; then
+                    if [[ "$AUTO_YES" == "true" ]]; then
+                        sudo apt-get update -qq
+                        sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                    else
+                        warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
+                    fi
+                else
+                    warn "sudo not available non-interactively; skip package installation"
+                fi
             fi
             ;;
         "dnf"|"yum")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo $pm install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+            if [[ "$INSTALL_TOOLS" != "true" ]]; then
+                log "INSTALL_TOOLS not enabled; skipping package installation"
             else
-                warn "sudo required for package installation"
+                if sudo -n true 2>/dev/null; then
+                    if [[ "$AUTO_YES" == "true" ]]; then
+                        sudo $pm install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                    else
+                        warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
+                    fi
+                else
+                    warn "sudo not available non-interactively; skip package installation"
+                fi
             fi
             ;;
         "zypper")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo zypper install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+            if [[ "$INSTALL_TOOLS" != "true" ]]; then
+                log "INSTALL_TOOLS not enabled; skipping package installation"
             else
-                warn "sudo required for package installation"
+                if sudo -n true 2>/dev/null; then
+                    if [[ "$AUTO_YES" == "true" ]]; then
+                        sudo zypper install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                    else
+                        warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
+                    fi
+                else
+                    warn "sudo not available non-interactively; skip package installation"
+                fi
             fi
             ;;
         "pacman")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+            if [[ "$INSTALL_TOOLS" != "true" ]]; then
+                log "INSTALL_TOOLS not enabled; skipping package installation"
             else
-                warn "sudo required for package installation"
+                if sudo -n true 2>/dev/null; then
+                    if [[ "$AUTO_YES" == "true" ]]; then
+                        sudo pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                    else
+                        warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
+                    fi
+                else
+                    warn "sudo not available non-interactively; skip package installation"
+                fi
             fi
             ;;
     esac

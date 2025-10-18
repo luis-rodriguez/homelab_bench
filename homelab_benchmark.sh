@@ -176,6 +176,17 @@ BENCH_DIR="$HOME/homelab_bench"
 mkdir -p "$BENCH_DIR"
 cd "$BENCH_DIR"
 
+# Parse flags passed from orchestrator
+INSTALL_TOOLS=false
+AUTO_YES=false
+while [[ ${1:-} != "" ]]; do
+    case "$1" in
+        --install-tools) INSTALL_TOOLS=true; shift ;;
+        --yes|-y) AUTO_YES=true; shift ;;
+        *) break ;;
+    esac
+done
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
@@ -183,6 +194,10 @@ log() {
 # Detect package manager and install tools
 install_tools() {
     log "Installing required tools..."
+    if [[ "$INSTALL_TOOLS" != "true" ]]; then
+        log "INSTALL_TOOLS not enabled; skipping package installation"
+        return 0
+    fi
     
     local pm=""
     if command -v apt-get &>/dev/null; then
@@ -206,33 +221,48 @@ install_tools() {
     
     case "$pm" in
         "apt")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo apt-get update -qq
-                sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || true
+            if sudo -n true 2>/dev/null; then
+                if [[ "$AUTO_YES" == "true" ]]; then
+                    sudo apt-get update -qq
+                    sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || true
+                else
+                    log "Package install requested but AUTO_YES not set; skipping interactive install"
+                fi
             else
-                apt-get update -qq 2>/dev/null || true
-                apt-get install -y $tools coreutils grep gawk 2>/dev/null || true
+                log "sudo not available non-interactively; skipping package install"
             fi
             ;;
         "dnf"|"yum")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo $pm install -y $tools coreutils grep gawk 2>/dev/null || true
+            if sudo -n true 2>/dev/null; then
+                if [[ "$AUTO_YES" == "true" ]]; then
+                    sudo $pm install -y $tools coreutils grep gawk 2>/dev/null || true
+                else
+                    log "Package install requested but AUTO_YES not set; skipping interactive install"
+                fi
             else
-                $pm install -y $tools coreutils grep gawk 2>/dev/null || true
+                log "sudo not available non-interactively; skipping package install"
             fi
             ;;
         "zypper")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo zypper install -y $tools coreutils grep gawk 2>/dev/null || true
+            if sudo -n true 2>/dev/null; then
+                if [[ "$AUTO_YES" == "true" ]]; then
+                    sudo zypper install -y $tools coreutils grep gawk 2>/dev/null || true
+                else
+                    log "Package install requested but AUTO_YES not set; skipping interactive install"
+                fi
             else
-                zypper install -y $tools coreutils grep gawk 2>/dev/null || true
+                log "sudo not available non-interactively; skipping package install"
             fi
             ;;
         "pacman")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
-                sudo pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || true
+            if sudo -n true 2>/dev/null; then
+                if [[ "$AUTO_YES" == "true" ]]; then
+                    sudo pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || true
+                else
+                    log "Package install requested but AUTO_YES not set; skipping interactive install"
+                fi
             else
-                pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || true
+                log "sudo not available non-interactively; skipping package install"
             fi
             ;;
     esac
@@ -427,9 +457,17 @@ EOF
     
     # Set environment variables and execute
     local env_vars="SUDO_NOPASS=$SUDO_NOPASS DISK_DEVICE_HINT='$DISK_DEVICE_HINT'"
-    
+    # Build remote flags based on orchestrator flags
+    local remote_flags=""
+    if [[ "$INSTALL_TOOLS" == "true" ]]; then
+        remote_flags+=" --install-tools"
+    fi
+    if [[ "$AUTO_YES" == "true" ]]; then
+        remote_flags+=" --yes"
+    fi
+
     log "Executing benchmark on $name (this may take several minutes)"
-    if remote_exec "$name" "$ip" "$key" "$user" "chmod +x $remote_script && $env_vars $remote_script" > "$LOGS_DIR/${name}_bench.log" 2>&1; then
+    if remote_exec "$name" "$ip" "$key" "$user" "chmod +x $remote_script && $env_vars $remote_script $remote_flags" > "$LOGS_DIR/${name}_bench.log" 2>&1; then
         success "Benchmark completed on $name"
     else
         error "Benchmark failed on $name, check logs"
