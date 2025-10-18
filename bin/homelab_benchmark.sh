@@ -1,3 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
+DRY_RUN=false
+while [[ ${1:-} != "" ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true; shift ;;
+    *) break ;;
+  esac
+done
+
+echo "[orchestrator] Results dir: $RESULTS_DIR"
+mkdir -p "$RESULTS_DIR"
+
+# Copy standalone remote helper into results so remote hosts can execute it
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "DRY-RUN: would copy bin/remote_benchmark.sh to $RESULTS_DIR/remote_benchmark.sh"
+else
+  cp "$(dirname "${BASH_SOURCE[0]}")/remote_benchmark.sh" "$RESULTS_DIR/remote_benchmark.sh" || true
+  chmod +x "$RESULTS_DIR/remote_benchmark.sh" || true
+  echo "Copied remote helper to $RESULTS_DIR/remote_benchmark.sh"
+fi
+
+echo "Orchestrator minimal run complete"
 #!/bin/bash
 
 # Homelab Benchmarking System
@@ -34,164 +59,8 @@ while [[ ${1:-} != "" ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --install-tools) INSTALL_TOOLS=true; shift ;;
         --yes|-y) AUTO_YES=true; shift ;;
-        *) break ;;
-    esac
-done
-
-safe_echo() { if [[ "$DRY_RUN" == "true" ]]; then echo "DRY-RUN: $*"; else echo "$*"; fi }
-
-# Validate host name and IP/host
-validate_host() {
-    local name="$1" ip="$2"
-    if [[ ! "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
-        error "Invalid host name: $name"
-        return 1
-    fi
-    # Basic IPv4 check or hostname (very permissive)
-    if [[ -z "$ip" ]]; then
-        error "Empty IP/hostname for $name"
-        return 1
-    fi
-    return 0
-}
-
-# Directories
-RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
-LOGS_DIR="$RESULTS_DIR/logs"
-RAW_DIR="$RESULTS_DIR/raw"
-REPORTS_DIR="$RESULTS_DIR/reports"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-log() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
-}
-
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-# Parse host configuration
-parse_host() {
-    local host_config="$1"
-    local name
-    local ip
-    local key
-    local user
-    name=$(echo "$host_config" | cut -d'|' -f1)
-    ip=$(echo "$host_config" | cut -d'|' -f2)
-    key=$(echo "$host_config" | cut -d'|' -f3)
-    user=$(echo "$host_config" | cut -d'|' -f4)
-
-    # Default user if not specified
-    if [[ -z "$user" ]]; then
-        user="luis"
-    fi
-
-    echo "$name $ip $key $user"
-}
-
-# Test SSH connectivity
-test_ssh() {
-    local name="$1" ip="$2" key="$3" user="$4"
-
-    # Basic validation
-    if [[ -z "$ip" ]]; then
-        error "Empty IP for host $name"
-        return 1
-    fi
-
-    # Build ssh options as an array to avoid word-splitting and injection
-    local -a ssh_opts=( -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
-    if [[ -n "$key" ]]; then
-        ssh_opts+=( -i "$key" )
-    fi
-
-    log "Testing SSH connectivity to $name ($ip)"
-    if ssh "${ssh_opts[@]}" -- "$user@$ip" -- "echo 'SSH OK'" &>/dev/null; then
-        success "SSH connection to $name successful"
-        return 0
-    else
-        error "SSH connection to $name failed"
-        return 1
-    fi
-}
-
-# Execute remote command
-remote_exec() {
-    local name="$1" ip="$2" key="$3" user="$4" command="$5"
-
-    # Validate target
-    if [[ -z "$ip" || -z "$user" ]]; then
-        error "remote_exec: missing ip or user for $name"
-        return 1
-    fi
-
-    # Build ssh options safely
-    local -a ssh_opts=( -o ConnectTimeout=30 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
-    if [[ -n "$key" ]]; then
-        ssh_opts+=( -i "$key" )
-    fi
-
-    # Execute remote command; pass command as a single argument after --
-    if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        safe_echo "[DRY-RUN] ssh ${ssh_opts[*]} $user@$ip -- $command"
-        return 0
-    fi
-
-    ssh "${ssh_opts[@]}" -- "$user@$ip" -- "$command" 2>&1
-}
-
-# Copy files from remote host
-remote_copy() {
-    local name="$1" ip="$2" key="$3" user="$4" remote_path="$5" local_path="$6"
-
-    if [[ -z "$ip" || -z "$user" ]]; then
-        error "remote_copy: missing ip or user for $name"
-        return 1
-    fi
-
-    local -a scp_opts=( -o ConnectTimeout=30 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
-    if [[ -n "$key" ]]; then
-        scp_opts+=( -i "$key" )
-    fi
-
-    # Use scp with an array of options
-    if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        safe_echo "[DRY-RUN] scp ${scp_opts[*]} $user@$ip:$remote_path $local_path"
-        return 0
-    fi
-
-    scp "${scp_opts[@]}" -r "$user@$ip:$remote_path" "$local_path" 2>&1
-}
-
-# Main benchmarking function for a single host
-benchmark_host() {
-    local name="$1" ip="$2" key="$3" user="$4"
-    
-    log "Starting benchmark for $name ($ip)"
-    mkdir -p "$RAW_DIR/$name"
-    
-    # Create remote benchmark script
-    local remote_script="/tmp/homelab_bench_${name}.sh"
-    
-    cat > "$RESULTS_DIR/remote_benchmark.sh" << 'EOF'
-#!/bin/bash
-
-set -euo pipefail
+        # Use the standalone remote benchmark script from the repo and copy it into the results directory
+        cp "$(dirname "${BASH_SOURCE[0]}")/remote_benchmark.sh" "$RESULTS_DIR/remote_benchmark.sh" || true
 
 BENCH_DIR="$HOME/homelab_bench"
 mkdir -p "$BENCH_DIR"
