@@ -1,0 +1,31 @@
+# Benchmark results and logs
+logs/
+raw/
+reports/
+
+# Temporary files
+*.tmp
+*.log
+remote_benchmark.sh
+
+# Power monitoring HTML reports
+powertop.html
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Test files
+fio_test.bin
