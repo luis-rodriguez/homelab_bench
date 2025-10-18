@@ -350,14 +350,20 @@ benchmark_network() {
         echo "=== NETWORK LOOPBACK TEST ==="
         
         # Start iperf3 server in background
-        iperf3 -s -D -1 2>/dev/null || echo "Failed to start iperf3 server"
-        sleep 2
-        
-        # Run client test
-        iperf3 -c localhost -P 4 -t 15 2>/dev/null || echo "iperf3 loopback test failed"
-        
-        # Stop server
-        pkill iperf3 2>/dev/null || true
+        if [[ "${DRY_RUN:-false}" == "true" ]]; then
+            safe_echo "[DRY-RUN] iperf3 -s -D -1"
+            safe_echo "[DRY-RUN] iperf3 -c localhost -P 4 -t 15"
+            safe_echo "[DRY-RUN] pkill iperf3"
+        else
+            iperf3 -s -D -1 2>/dev/null || echo "Failed to start iperf3 server"
+            sleep 2
+
+            # Run client test
+            iperf3 -c localhost -P 4 -t 15 2>/dev/null || echo "iperf3 loopback test failed"
+
+            # Stop server
+            pkill iperf3 2>/dev/null || true
+        fi
         
     } > network_bench.txt
     

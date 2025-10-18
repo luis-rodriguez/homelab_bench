@@ -147,6 +147,11 @@ remote_exec() {
     fi
 
     # Execute remote command; pass command as a single argument after --
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] ssh ${ssh_opts[*]} $user@$ip -- $command"
+        return 0
+    fi
+
     ssh "${ssh_opts[@]}" -- "$user@$ip" -- "$command" 2>&1
 }
 
@@ -165,6 +170,11 @@ remote_copy() {
     fi
 
     # Use scp with an array of options
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] scp ${scp_opts[*]} $user@$ip:$remote_path $local_path"
+        return 0
+    fi
+
     scp "${scp_opts[@]}" -r "$user@$ip:$remote_path" "$local_path" 2>&1
 }
 
@@ -466,6 +476,15 @@ EOF
 
     scp "${scp_opts[@]}" -r "$RESULTS_DIR/remote_benchmark.sh" "$user@$ip:$remote_script" 2>"$LOGS_DIR/${name}_copy.log"
     
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] Would copy and execute remote_benchmark.sh on $name ($ip)"
+        continue
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] scp ${scp_opts[*]} $RESULTS_DIR/remote_benchmark.sh $user@$ip:$remote_script"
+        return 0
+    fi
+    
     # Set environment variables and execute
     local env_vars="SUDO_NOPASS=$SUDO_NOPASS DISK_DEVICE_HINT='$DISK_DEVICE_HINT'"
     # Build remote flags based on orchestrator flags
@@ -518,8 +537,12 @@ run_network_benchmarks() {
     
     # Start iperf3 server using PID file to avoid indiscriminate pkill
     log "Starting iperf3 server on $server_name"
-    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "mkdir -p ~/homelab_bench && pkill -f 'iperf3 -s' 2>/dev/null || true; iperf3 -s -D --logfile ~/homelab_bench/iperf3_server.log && echo \$! > ~/homelab_bench/iperf3.pid" > "$LOGS_DIR/iperf_server.log" 2>&1 || true
-    sleep 2
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] Start iperf3 server on $server_name ($server_ip)"
+    else
+        remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "mkdir -p ~/homelab_bench && pkill -f 'iperf3 -s' 2>/dev/null || true; iperf3 -s -D --logfile ~/homelab_bench/iperf3_server.log && echo \$! > ~/homelab_bench/iperf3.pid" > "$LOGS_DIR/iperf_server.log" 2>&1 || true
+        sleep 2
+    fi
     
     # Run client tests from each host
     for host_config in "${HOSTS[@]}"; do
@@ -552,7 +575,11 @@ run_network_benchmarks() {
     
     # Stop iperf3 server by PID if available
     log "Stopping iperf3 server"
-    remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "if [[ -f ~/homelab_bench/iperf3.pid ]]; then kill \$(cat ~/homelab_bench/iperf3.pid) 2>/dev/null || true; rm -f ~/homelab_bench/iperf3.pid; fi" >> "$LOGS_DIR/iperf_server.log" 2>&1 || true
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        safe_echo "[DRY-RUN] Stop iperf3 server on $server_name ($server_ip)"
+    else
+        remote_exec "$server_name" "$server_ip" "$server_key" "$server_user" "if [[ -f ~/homelab_bench/iperf3.pid ]]; then kill \$(cat ~/homelab_bench/iperf3.pid) 2>/dev/null || true; rm -f ~/homelab_bench/iperf3.pid; fi" >> "$LOGS_DIR/iperf_server.log" 2>&1 || true
+    fi
 }
 
 # Generate reports

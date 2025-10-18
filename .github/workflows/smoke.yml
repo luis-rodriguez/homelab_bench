@@ -1,0 +1,31 @@
+name: Smoke tests (dry-run)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - '**.sh'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '**.sh'
+      - '.github/workflows/**'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: |
+          chmod +x homelab_benchmark.sh local_benchmark.sh || true
+
+      - name: Run homelab_benchmark.sh dry-run
+        run: |
+          ./homelab_benchmark.sh --dry-run || exit 1
+
+      - name: Run local_benchmark.sh dry-run
+        run: |
+          ./local_benchmark.sh --dry-run || exit 1
