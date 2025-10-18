@@ -65,14 +65,21 @@ parse_host() {
 # Test SSH connectivity
 test_ssh() {
     local name="$1" ip="$2" key="$3" user="$4"
-    
-    local ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes"
-    if [[ -n "$key" ]]; then
-        ssh_opts="$ssh_opts -i $key"
+
+    # Basic validation
+    if [[ -z "$ip" ]]; then
+        error "Empty IP for host $name"
+        return 1
     fi
-    
+
+    # Build ssh options as an array to avoid word-splitting and injection
+    local -a ssh_opts=( -o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
+    if [[ -n "$key" ]]; then
+        ssh_opts+=( -i "$key" )
+    fi
+
     log "Testing SSH connectivity to $name ($ip)"
-    if ssh $ssh_opts "$user@$ip" "echo 'SSH OK'" &>/dev/null; then
+    if ssh "${ssh_opts[@]}" -- "$user@$ip" -- "echo 'SSH OK'" &>/dev/null; then
         success "SSH connection to $name successful"
         return 0
     else
@@ -84,25 +91,39 @@ test_ssh() {
 # Execute remote command
 remote_exec() {
     local name="$1" ip="$2" key="$3" user="$4" command="$5"
-    
-    local ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o BatchMode=yes"
-    if [[ -n "$key" ]]; then
-        ssh_opts="$ssh_opts -i $key"
+
+    # Validate target
+    if [[ -z "$ip" || -z "$user" ]]; then
+        error "remote_exec: missing ip or user for $name"
+        return 1
     fi
-    
-    ssh $ssh_opts "$user@$ip" "$command" 2>&1
+
+    # Build ssh options safely
+    local -a ssh_opts=( -o ConnectTimeout=30 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
+    if [[ -n "$key" ]]; then
+        ssh_opts+=( -i "$key" )
+    fi
+
+    # Execute remote command; pass command as a single argument after --
+    ssh "${ssh_opts[@]}" -- "$user@$ip" -- "$command" 2>&1
 }
 
 # Copy files from remote host
 remote_copy() {
     local name="$1" ip="$2" key="$3" user="$4" remote_path="$5" local_path="$6"
-    
-    local ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o BatchMode=yes"
-    if [[ -n "$key" ]]; then
-        ssh_opts="$ssh_opts -i $key"
+
+    if [[ -z "$ip" || -z "$user" ]]; then
+        error "remote_copy: missing ip or user for $name"
+        return 1
     fi
-    
-    scp $ssh_opts -r "$user@$ip:$remote_path" "$local_path" 2>&1
+
+    local -a scp_opts=( -o ConnectTimeout=30 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
+    if [[ -n "$key" ]]; then
+        scp_opts+=( -i "$key" )
+    fi
+
+    # Use scp with an array of options
+    scp "${scp_opts[@]}" -r "$user@$ip:$remote_path" "$local_path" 2>&1
 }
 
 # Main benchmarking function for a single host
@@ -185,10 +206,9 @@ install_tools() {
             ;;
     esac
     
-    # Setup sensors if available
-    if command -v sensors-detect &>/dev/null && [[ "$SUDO_NOPASS" == "true" ]]; then
-        log "Setting up sensors..."
-        yes | sudo sensors-detect 2>/dev/null || true
+    # Setup sensors if available - do not auto-answer sensors-detect to avoid unintended kernel changes
+    if command -v sensors-detect &>/dev/null; then
+        log "lm-sensors available; skipping automatic sensors-detect. Run 'sensors-detect' manually if desired."
     fi
 }
 
@@ -296,10 +316,12 @@ benchmark_disk() {
         echo -e "\n=== FIO READ TEST ==="
         # Create test file and run fio
         if command -v fio &>/dev/null; then
-            dd if=/dev/zero of=/tmp/fio_test.bin bs=1M count=256 status=none 2>/dev/null || echo "Failed to create test file"
-            if [[ -f /tmp/fio_test.bin ]]; then
-                fio --name=readseq --filename=/tmp/fio_test.bin --rw=read --bs=1M --iodepth=16 --ioengine=libaio --runtime=30 --time_based --group_reporting 2>/dev/null || echo "fio failed"
-                rm -f /tmp/fio_test.bin
+            # Use mktemp to create a secure temporary test file to prevent symlink/TEMP attacks
+            tmpfile=$(mktemp --tmpdir fio_test.XXXXXX) || tmpfile="/tmp/fio_test.$$"
+            dd if=/dev/zero of="$tmpfile" bs=1M count=256 status=none 2>/dev/null || { echo "Failed to create test file"; rm -f -- "$tmpfile" 2>/dev/null || true; }
+            if [[ -f "$tmpfile" ]]; then
+                fio --name=readseq --filename="$tmpfile" --rw=read --bs=1M --iodepth=16 --ioengine=libaio --runtime=30 --time_based --group_reporting 2>/dev/null || echo "fio failed"
+                rm -f -- "$tmpfile"
             fi
         else
             echo "fio not available"
