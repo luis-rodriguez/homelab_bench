@@ -21,3 +21,12 @@ Changelog
 - Implemented DRY-RUN and safer temp file handling
 - Added CI checks: shellcheck and smoke tests
 - Added security policy and audit documents
+
+## Release v1.1
+
+Planned items for v1.1
+
+- Bump automated audit updater to v1.1, include git short SHA in audit headers.
+- Regenerate audit files and prepare `release/v1.1` branch.
+- Ensure CI workflow will auto-commit audit updates on push.
+
