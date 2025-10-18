@@ -9,6 +9,7 @@ set -euo pipefail
 DISK_DEVICE_HINT=""
 SUDO_NOPASS=true
 NON_DESTRUCTIVE_ONLY=true
+RUN_SENSORS_DETECT=false   # set to true to run sensors-detect interactively (NOT recommended)
 
 # Directories
 RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
@@ -49,6 +50,27 @@ setup_local_bench() {
     log "Local benchmark directory: $bench_dir"
 }
 
+# Cleanup handler for temporary files
+TMPFILES=()
+cleanup() {
+    for f in "${TMPFILES[@]:-}"; do
+        [[ -n "$f" && -e "$f" ]] && rm -f -- "$f" 2>/dev/null || true
+    done
+}
+trap cleanup EXIT INT TERM
+
+# Basic preflight checks for RESULTS_DIR
+preflight_checks() {
+    if [[ ! -d "$RESULTS_DIR" ]]; then
+        warn "Results directory $RESULTS_DIR does not exist; attempting to create"
+        mkdir -p "$RESULTS_DIR" || { error "Failed to create $RESULTS_DIR"; exit 1; }
+    fi
+    if [[ ! -w "$RESULTS_DIR" ]]; then
+        error "Results directory $RESULTS_DIR is not writable by $(id -un). Aborting."
+        exit 1
+    fi
+}
+
 # Detect package manager and install tools
 install_tools() {
     log "Checking and installing required tools..."
@@ -77,11 +99,11 @@ install_tools() {
     
     case "$pm" in
         "apt")
-            if [[ "$SUDO_NOPASS" == "true" ]]; then
+            if sudo -n true 2>/dev/null; then
                 sudo apt-get update -qq
                 sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
             else
-                warn "sudo required for package installation"
+                warn "sudo not available non-interactively; skip package installation or run with passwordless sudo"
             fi
             ;;
         "dnf"|"yum")
@@ -107,10 +129,19 @@ install_tools() {
             ;;
     esac
     
-    # Setup sensors if available
-    if command -v sensors-detect &>/dev/null && [[ "$SUDO_NOPASS" == "true" ]]; then
-        log "Setting up sensors..."
-        yes | sudo sensors-detect 2>/dev/null || warn "sensors-detect failed"
+    # Setup sensors: do NOT auto-answer sensors-detect; require explicit opt-in
+    if command -v sensors-detect &>/dev/null; then
+        log "lm-sensors detected. Skipping automatic sensors-detect."
+        if [[ "${RUN_SENSORS_DETECT:-false}" == "true" ]]; then
+            if sudo -n true 2>/dev/null; then
+                log "Running sensors-detect interactively as requested"
+                sudo sensors-detect || warn "sensors-detect failed"
+            else
+                warn "RUN_SENSORS_DETECT=true but sudo would prompt; run sensors-detect manually"
+            fi
+        else
+            log "To run sensors-detect automatically set RUN_SENSORS_DETECT=true (not recommended)"
+        fi
     fi
 }
 
@@ -232,14 +263,17 @@ benchmark_disk() {
         echo -e "\n=== FIO READ TEST ==="
         # Create test file and run fio
         if command -v fio &>/dev/null; then
-            log "Creating test file for fio..."
-            dd if=/dev/zero of=/tmp/fio_test.bin bs=1M count=256 status=none 2>/dev/null || echo "Failed to create test file"
-            if [[ -f /tmp/fio_test.bin ]]; then
-                log "Running fio sequential read test..."
-                fio --name=readseq --filename=/tmp/fio_test.bin --rw=read --bs=1M --iodepth=16 --ioengine=libaio --runtime=30 --time_based --group_reporting 2>/dev/null || echo "fio failed"
-                rm -f /tmp/fio_test.bin
-                log "Test file cleaned up"
-            fi
+                log "Creating secure temporary file for fio..."
+                tmpfile=$(mktemp --tmpdir fio_test.XXXXXX) || tmpfile="/tmp/fio_test.$$"
+                TMPFILES+=("$tmpfile")
+                if ! dd if=/dev/zero of="$tmpfile" bs=1M count=256 status=none 2>/dev/null; then
+                    echo "Failed to create test file" >&2
+                else
+                    log "Running fio sequential read test..."
+                    fio --name=readseq --filename="$tmpfile" --rw=read --bs=1M --iodepth=16 --ioengine=libaio --runtime=30 --time_based --group_reporting > fio_run.log 2>&1 || echo "fio failed (see fio_run.log)" >&2
+                fi
+                # cleanup will be handled by trap/cleanup
+                log "FIO test completed; temporary file will be removed"
         else
             echo "fio not available"
         fi
