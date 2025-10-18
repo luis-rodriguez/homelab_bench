@@ -28,7 +28,7 @@ This system allows you to benchmark multiple Linux hosts across your homelab inf
 # 1. Configure your machines (see SETUP_GUIDE.md for details)
 # 2. Edit homelab_benchmark.sh with your machine details
 # 3. Run the benchmark
-./homelab_benchmark.sh
+bin/homelab_benchmark.sh
 ```
 
 📖 **For detailed multi-host setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
@@ -132,7 +132,7 @@ Tools are automatically installed, but manual installation may be needed for:
 ### Benchmark Multiple Hosts
 ```bash
 # Configure hosts in script
-./homelab_benchmark.sh
+bin/homelab_benchmark.sh
 ```
 
 ### Add Local Machine to Comparison

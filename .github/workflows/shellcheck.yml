@@ -25,8 +25,7 @@ jobs:
 
       - name: Run shellcheck
         run: |
-          shellcheck homelab_benchmark.sh || true
-          shellcheck local_benchmark.sh || true
+          shellcheck bin/*.sh scripts/*.sh || true
 
   bash-syntax:
     name: Bash syntax check
@@ -37,5 +36,5 @@ jobs:
 
       - name: Bash -n (syntax check)
         run: |
-          bash -n homelab_benchmark.sh
-          bash -n local_benchmark.sh
+          bash -n bin/homelab_benchmark.sh
+          bash -n bin/local_benchmark.sh

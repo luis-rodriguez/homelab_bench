@@ -14,7 +14,7 @@ RELEASE_TAG="v1.1"
 GIT_SHORT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
 # Run shellcheck and capture output
-SC_OUT=$(shellcheck --format=gcc homelab_benchmark.sh local_benchmark.sh 2>&1 || true)
+SC_OUT=$(shellcheck --format=gcc bin/*.sh scripts/*.sh 2>&1 || true)
 # Keep a short trimmed summary (first 60 lines)
 SC_SUMMARY="$(echo "$SC_OUT" | head -n 60)"
 

@@ -18,14 +18,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make scripts executable
+      - name: Make bin scripts executable
         run: |
-          chmod +x homelab_benchmark.sh local_benchmark.sh || true
+          chmod +x bin/homelab_benchmark.sh bin/local_benchmark.sh || true
 
       - name: Run homelab_benchmark.sh dry-run
         run: |
-          ./homelab_benchmark.sh --dry-run || exit 1
+          TERM=dumb bin/homelab_benchmark.sh --dry-run </dev/null || exit 1
 
       - name: Run local_benchmark.sh dry-run
         run: |
-          ./local_benchmark.sh --dry-run || exit 1
+          TERM=dumb bin/local_benchmark.sh --dry-run </dev/null || exit 1
