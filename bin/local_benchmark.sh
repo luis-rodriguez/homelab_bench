@@ -614,5 +614,3 @@ main() {
 
 # Execute main function
 main "$@"
-
-*** End Patch
