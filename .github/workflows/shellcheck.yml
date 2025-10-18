@@ -1,0 +1,41 @@
+name: Shellcheck and Bash Lint
+
+on:
+  push:
+    paths:
+      - '**.sh'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '**.sh'
+      - '.github/workflows/**'
+
+jobs:
+  shellcheck:
+    name: Run ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: |
+          shellcheck homelab_benchmark.sh || true
+          shellcheck local_benchmark.sh || true
+
+  bash-syntax:
+    name: Bash syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bash -n (syntax check)
+        run: |
+          bash -n homelab_benchmark.sh
+          bash -n local_benchmark.sh
