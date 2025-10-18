@@ -8,12 +8,15 @@ set -euo pipefail
 # Configuration
 DISK_DEVICE_HINT=""
 SUDO_NOPASS=true
+# shellcheck disable=SC2034  # variable intentionally present for config
 NON_DESTRUCTIVE_ONLY=true
 RUN_SENSORS_DETECT=false   # set to true to run sensors-detect interactively (NOT recommended)
 
 # CLI flags
+# shellcheck disable=SC2034  # DRY_RUN may be used by callers / future dry-run logic
 INSTALL_TOOLS=false
 AUTO_YES=false
+DRY_RUN=false
 while [[ ${1:-} != "" ]]; do
     case "$1" in
         --install-tools) INSTALL_TOOLS=true; shift ;;
@@ -66,7 +69,9 @@ setup_local_bench() {
 TMPFILES=()
 cleanup() {
     for f in "${TMPFILES[@]:-}"; do
-        [[ -n "$f" && -e "$f" ]] && rm -f -- "$f" 2>/dev/null || true
+        if [[ -n "$f" && -e "$f" ]]; then
+            rm -f -- "$f" 2>/dev/null || true
+        fi
     done
 }
 trap cleanup EXIT INT TERM
@@ -117,7 +122,7 @@ install_tools() {
                 if sudo -n true 2>/dev/null; then
                     if [[ "$AUTO_YES" == "true" ]]; then
                         sudo apt-get update -qq
-                        sudo apt-get install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                        sudo apt-get install -y "$tools" coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
                     else
                         warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
                     fi
@@ -132,7 +137,7 @@ install_tools() {
             else
                 if sudo -n true 2>/dev/null; then
                     if [[ "$AUTO_YES" == "true" ]]; then
-                        sudo $pm install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                        sudo "$pm" install -y "$tools" coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
                     else
                         warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
                     fi
@@ -147,7 +152,7 @@ install_tools() {
             else
                 if sudo -n true 2>/dev/null; then
                     if [[ "$AUTO_YES" == "true" ]]; then
-                        sudo zypper install -y $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                        sudo zypper install -y "$tools" coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
                     else
                         warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
                     fi
@@ -162,7 +167,7 @@ install_tools() {
             else
                 if sudo -n true 2>/dev/null; then
                     if [[ "$AUTO_YES" == "true" ]]; then
-                        sudo pacman -S --noconfirm $tools coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
+                        sudo pacman -S --noconfirm "$tools" coreutils grep gawk 2>/dev/null || warn "Some packages failed to install"
                     else
                         warn "INSTALL_TOOLS requested but AUTO_YES not set; skipping interactive install"
                     fi
@@ -216,7 +221,8 @@ collect_sysinfo() {
         ip -br a
         
         echo -e "\n=== NETWORK INTERFACE ==="
-        local iface=$(ip -br l | awk '/UP/ && $1!="lo"{print $1; exit}')
+        local iface
+        iface=$(ip -br l | awk '/UP/ && $1!="lo"{print $1; exit}')
         if [[ -n "$iface" ]]; then
             ethtool -i "$iface" 2>/dev/null || echo "ethtool not available"
         fi

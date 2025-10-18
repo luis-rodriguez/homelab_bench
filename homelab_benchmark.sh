@@ -16,6 +16,7 @@ IPERF_SERVER_HOST="machineA"           # Which host will run the iperf3 server
 DISK_DEVICE_HINT=""                   # Optional: specific device like "/dev/nvme0n1"
 SUDO_NOPASS=true                     # Set to false if sudo requires password
 NON_DESTRUCTIVE_ONLY=true            # MUST remain true for safety
+# shellcheck disable=SC2034  # variable kept for clarity/config export
 
 # CLI flags
 DRY_RUN=false
@@ -80,16 +81,20 @@ warn() {
 # Parse host configuration
 parse_host() {
     local host_config="$1"
-    local name=$(echo "$host_config" | cut -d'|' -f1)
-    local ip=$(echo "$host_config" | cut -d'|' -f2)
-    local key=$(echo "$host_config" | cut -d'|' -f3)
-    local user=$(echo "$host_config" | cut -d'|' -f4)
-    
+    local name
+    local ip
+    local key
+    local user
+    name=$(echo "$host_config" | cut -d'|' -f1)
+    ip=$(echo "$host_config" | cut -d'|' -f2)
+    key=$(echo "$host_config" | cut -d'|' -f3)
+    user=$(echo "$host_config" | cut -d'|' -f4)
+
     # Default user if not specified
     if [[ -z "$user" ]]; then
         user="luis"
     fi
-    
+
     echo "$name $ip $key $user"
 }
 
@@ -448,12 +453,12 @@ EOF
 
     # Copy script to remote host
     log "Copying benchmark script to $name"
-    local ssh_opts="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o BatchMode=yes"
+    local -a scp_opts=( -o ConnectTimeout=30 -o BatchMode=yes -o StrictHostKeyChecking=accept-new )
     if [[ -n "$key" ]]; then
-        ssh_opts="$ssh_opts -i $key"
+        scp_opts+=( -i "$key" )
     fi
-    
-    scp $ssh_opts "$RESULTS_DIR/remote_benchmark.sh" "$user@$ip:$remote_script" 2>"$LOGS_DIR/${name}_copy.log"
+
+    scp "${scp_opts[@]}" -r "$RESULTS_DIR/remote_benchmark.sh" "$user@$ip:$remote_script" 2>"$LOGS_DIR/${name}_copy.log"
     
     # Set environment variables and execute
     local env_vars="SUDO_NOPASS=$SUDO_NOPASS DISK_DEVICE_HINT='$DISK_DEVICE_HINT'"
