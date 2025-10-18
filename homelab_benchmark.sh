@@ -18,6 +18,12 @@ SUDO_NOPASS=true                     # Set to false if sudo requires password
 NON_DESTRUCTIVE_ONLY=true            # MUST remain true for safety
 # shellcheck disable=SC2034  # variable kept for clarity/config export
 
+# Enforce non-destructive safety guard
+if [[ "${NON_DESTRUCTIVE_ONLY:-}" != "true" ]]; then
+    error "NON_DESTRUCTIVE_ONLY must be true to run this script"
+    exit 1
+fi
+
 # CLI flags
 DRY_RUN=false
 INSTALL_TOOLS=false

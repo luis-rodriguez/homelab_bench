@@ -65,6 +65,9 @@ setup_local_bench() {
     log "Local benchmark directory: $bench_dir"
 }
 
+safe_echo() { if [[ "${DRY_RUN:-false}" == "true" ]]; then echo "DRY-RUN: $*"; else echo "$*"; fi }
+
+
 # Cleanup handler for temporary files
 TMPFILES=()
 cleanup() {
