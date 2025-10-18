@@ -4,12 +4,17 @@ Date: 2025-10-18
 
 This document summarizes the security audit performed on `local_benchmark.sh` and the hardening changes applied.
 
+Release: v1.0.0
+Last automated update: 2025-10-18
+
+NOTE: This file is (or can be) updated automatically by CI. See `.github/workflows/update-audits.yml` and `scripts/update_audits.sh`.
+
 ## Overview
 `local_benchmark.sh` runs non-destructive performance benchmarks on the local machine and updates reports in the repository. The script collects system information, runs CPU/memory/disk/network tests, optionally installs tools, and collects power/temperature information.
 
 ## Major findings (summary)
 - The script auto-answered `sensors-detect` with `yes | sudo sensors-detect`, which could load kernel modules or change kernel state automatically.
-- A fixed temporary filename was used for fio (`/tmp/fio_test.bin`) which is susceptible to symlink and TOCTOU attacks.
+- A fixed temporary filename was used for fio (`/tmp/fio_test.bin`) which is susceptible to symlink and TOCTOU attacks.continue
 - The script assumed `sudo` would be non-interactive (SUDO_NOPASS=true) without verifying it; operations may fail or hang if sudo prompts for password.
 - Several commands silenced stderr with `2>/dev/null`, which can hide actionable errors.
 - Use of `pkill iperf3` may affect unrelated processes; PID-based management is safer.

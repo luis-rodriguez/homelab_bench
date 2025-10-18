@@ -1,0 +1,31 @@
+name: Update security audits
+
+on:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  update-audits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y shellcheck
+
+      - name: Run audit updater
+        run: |
+          chmod +x scripts/update_audits.sh
+          scripts/update_audits.sh
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore(audit): update security audit files"
+          file_pattern: 'SECURITY_AUDIT*.md'
+          branch: ${{ github.ref_name }}
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

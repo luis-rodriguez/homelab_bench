@@ -4,6 +4,11 @@ Date: 2025-10-18
 
 This document summarizes the security audit performed on `homelab_benchmark.sh` and the changes applied to harden the script.
 
+Release: v1.0.0
+Last automated update: 2025-10-18
+
+NOTE: This file is (or can be) updated automatically by CI. See `.github/workflows/update-audits.yml` and `scripts/update_audits.sh`.
+
 ## Overview
 `homelab_benchmark.sh` orchestrates non-destructive performance benchmarks across multiple Linux hosts using SSH/SCP. The script generates a remote script (`remote_benchmark.sh`), copies it to target hosts, executes it, and retrieves results. It also coordinates `iperf3` network tests and generates reports locally.
 
