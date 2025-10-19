@@ -26,11 +26,19 @@ jobs:
           ruby-version: '3.1'
           bundler-cache: true
 
+      - name: Cache gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
       - name: Install dependencies (if Gemfile present)
         working-directory: ./docs
         run: |
-          if [ -f docs/Gemfile ]; then
-            cd docs
+          if [ -f Gemfile ]; then
+            bundle config set --local path 'vendor/bundle'
             bundle install --jobs 4 --retry 3
           else
             echo "No Gemfile in docs/; skipping bundle install"
@@ -39,19 +47,18 @@ jobs:
       - name: Build Jekyll site
         working-directory: ./docs
         run: |
-          # prefer bundle exec if Gemfile exists
           if [ -f Gemfile ]; then
             bundle exec jekyll build --destination _site
           else
             jekyll build --source . --destination _site || true
           fi
 
-      - name: Upload Pages artifact
+      - name: Upload Pages artifact (official)
         uses: actions/upload-pages-artifact@v2
         with:
           path: ./docs/_site
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (official)
         uses: actions/deploy-pages@v1
 
       - name: Post-deploy status
