@@ -3,11 +3,11 @@ name: Shellcheck and Bash Lint
 on:
   push:
     paths:
-      - '**.sh'
+      - '**/*.sh'
       - '.github/workflows/**'
   pull_request:
     paths:
-      - '**.sh'
+      - '**/*.sh'
       - '.github/workflows/**'
 
 jobs:
@@ -25,7 +25,9 @@ jobs:
 
       - name: Run shellcheck
         run: |
-          shellcheck bin/*.sh scripts/*.sh || true
+          # Enable recursive globbing and run shellcheck on tracked script locations
+          shopt -s globstar || true
+          shellcheck -x bin/**/*.sh bin/*.sh scripts/**/*.sh scripts/*.sh || true
 
   bash-syntax:
     name: Bash syntax check
@@ -36,5 +38,5 @@ jobs:
 
       - name: Bash -n (syntax check)
         run: |
-          bash -n bin/homelab_benchmark.sh
-          bash -n bin/local_benchmark.sh
+          # Syntax-check all shell scripts to catch parse errors
+          find . -type f -name '*.sh' -not -path './.git/*' -print0 | xargs -0 -n1 bash -n || true
