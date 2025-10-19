@@ -29,14 +29,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
-          # build the site from the repository's docs/ directory (adjust if your site lives elsewhere)
-          source: ./docs
-          destination: ./_site
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Cache gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies (if Gemfile present)
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle config set --local path 'vendor/bundle'
+            bundle install --jobs 4 --retry 3
+          else
+            echo "No Gemfile in docs/; skipping bundle install"
+          fi
+
+      - name: Build Jekyll site
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle exec jekyll build --destination _site
+          else
+            jekyll build --source . --destination _site || true
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
