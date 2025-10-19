@@ -8,6 +8,9 @@ on:
 jobs:
   update-audits:
     runs-on: ubuntu-latest
+    # ensure the job can push audit updates back to the repo
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

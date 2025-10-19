@@ -25,6 +25,21 @@ jobs:
             chmod -R +x bin || true
           fi
 
+      - name: Debug: list bin and script files
+        run: |
+          echo "Workspace files:" && ls -la || true
+          echo "bin/ contents:" && [ -d bin ] && ls -la bin || true
+          echo "shellcheck check (if present)" && which shellcheck || true
+
+      - name: Syntax check scripts
+        run: |
+          set -e
+          # run bash -n for obvious syntax errors on top-level scripts
+          for f in ./bin/*.sh ./scripts/*.sh; do
+            [ -f "$f" ] || continue
+            echo "bash -n $f" && bash -n "$f"
+          done || true
+
       - name: Run homelab_benchmark.sh dry-run
         run: |
           # provide a dummy host (localhost) so the orchestrator doesn't exit early
