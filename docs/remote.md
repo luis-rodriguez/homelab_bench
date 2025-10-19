@@ -37,3 +37,29 @@ Run example (real):
 ```bash
 bin/homelab_benchmark.sh host1.example.com
 ```
+
+SSH examples
+
+If you need to use a jump host / bastion, add a `~/.ssh/config` entry for the host:
+
+```ssh-config
+Host bastion
+	HostName bastion.example.com
+	User jumpuser
+
+Host target
+	HostName target.internal
+	ProxyJump bastion
+	User remoteuser
+```
+
+Tar-stream fetch (recommended for many files)
+
+If `scp -r` is slow or you need to preserve permissions, the orchestrator can fetch via a tar stream:
+
+```bash
+# on controller
+ssh target 'tar -C "$REMOTE_TMP" -cf - .' | tar -C "$DEST_DIR" -xpf -
+```
+
+This avoids creating temporary archives on disk and preserves file permissions.
