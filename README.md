@@ -178,3 +178,35 @@ This system is designed to be easily extended. To add new benchmarks:
 ## License
 
 This project is provided as-is for homelab and educational use.
+
+## Documentation
+
+This repository contains a number of internal documentation files and guidance. The quick links below point to the most important documents and the `docs/` site used for the GitHub Pages site.
+
+- Docs site (Jekyll source): `docs/` — contains `index.md`, `local.md`, `remote.md`, `orchestrator.md`, and more.
+- Setup guide: `SETUP_GUIDE.md` — step-by-step environment setup and tool installation.
+- Security and audits:
+  - `SECURITY.md`
+  - `SECURITY_POLICY.md`
+  - `SECURITY_AUDIT.md`
+  - `SECURITY_AUDIT_LOCAL.md`
+- Release notes: `RELEASE.md` — changelog and release history.
+- Scripts and orchestrator:
+  - `bin/homelab_benchmark.sh` — multi-host orchestrator
+  - `bin/local_benchmark.sh` — local runner
+  - `bin/local/` and `bin/remote/` — modular benchmark components
+
+Quick commands
+
+```bash
+# run the orchestrator (multi-host)
+bin/homelab_benchmark.sh --help
+
+# run local benchmark
+bin/local_benchmark.sh --help
+
+# build the docs locally (requires Ruby + Jekyll)
+cd docs && bundle install && bundle exec jekyll serve
+```
+
+If you want other links added here (for example direct links to `docs/orchestrator.md` anchors or example config files), tell me which pages to prioritize and I’ll add them.
