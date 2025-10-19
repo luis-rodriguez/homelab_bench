@@ -2,11 +2,11 @@
 logs/
 raw/
 reports/
+results/
 
 # Temporary files
 *.tmp
 *.log
-remote_benchmark.sh
 
 # Power monitoring HTML reports
 powertop.html

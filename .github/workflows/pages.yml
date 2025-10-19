@@ -1,0 +1,58 @@
+name: Build and deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'release/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Install dependencies (if Gemfile present)
+        working-directory: ./docs
+        run: |
+          if [ -f docs/Gemfile ]; then
+            cd docs
+            bundle install --jobs 4 --retry 3
+          else
+            echo "No Gemfile in docs/; skipping bundle install"
+          fi
+
+      - name: Build Jekyll site
+        working-directory: ./docs
+        run: |
+          # prefer bundle exec if Gemfile exists
+          if [ -f Gemfile ]; then
+            bundle exec jekyll build --destination _site
+          else
+            jekyll build --source . --destination _site || true
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: ./docs/_site
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
+
+      - name: Post-deploy status
+        run: echo "Pages deployed from branch ${{ github.ref }}"

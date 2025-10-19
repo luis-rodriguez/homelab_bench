@@ -72,7 +72,7 @@ ssh user@host "which sysbench fio iperf3 hdparm"
 | CSV Data | `reports/homelab_metrics.csv` |
 | Raw Results | `raw/<hostname>/` |
 | Logs | `logs/` |
-| Config | `homelab_benchmark.sh` (lines 9-18) |
+| Config | `bin/homelab_benchmark.sh` (lines 9-18) |
 
 ## Performance Interpretation
 
@@ -126,14 +126,14 @@ ssh user@host "which sysbench fio iperf3 hdparm"
 
 ### Run and Email Results
 ```bash
-./homelab_benchmark.sh && \
+bin/homelab_benchmark.sh && \
 mail -s "Homelab Benchmark Results" user@email.com < reports/homelab_comparison.md
 ```
 
 ### Schedule Monthly Benchmarks
 ```bash
 # Add to crontab
-0 2 1 * * cd /path/to/homelab_bench_results && ./homelab_benchmark.sh
+0 2 1 * * cd /path/to/homelab_bench_results && bin/homelab_benchmark.sh
 ```
 
 ### Compare Before/After
@@ -142,7 +142,7 @@ mail -s "Homelab Benchmark Results" user@email.com < reports/homelab_comparison.
 cp reports/homelab_metrics.csv reports/homelab_metrics_$(date +%Y%m%d).csv
 
 # Run new benchmark
-./homelab_benchmark.sh
+bin/homelab_benchmark.sh
 
 # Compare
 diff reports/homelab_metrics_*.csv

@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+exec "$(dirname "$0")/bin/homelab_benchmark.sh" "$@"
 #!/bin/bash
 
 # Homelab Benchmarking System

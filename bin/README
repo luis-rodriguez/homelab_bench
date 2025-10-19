@@ -1,0 +1,1 @@
+Store runnable entrypoints (make scripts executable). Use `bin/` for user-facing scripts.

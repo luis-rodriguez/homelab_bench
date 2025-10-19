@@ -4,11 +4,11 @@ on:
   push:
     branches: [ "main", "master" ]
     paths:
-      - '**.sh'
+      - '**/*.sh'
       - '.github/workflows/**'
   pull_request:
     paths:
-      - '**.sh'
+      - '**/*.sh'
       - '.github/workflows/**'
 
 jobs:
@@ -18,14 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make scripts executable
+      - name: Make bin scripts executable
         run: |
-          chmod +x homelab_benchmark.sh local_benchmark.sh || true
+          # ensure all scripts under bin/ are executable for CI runs
+          if [ -d bin ]; then
+            chmod -R +x bin || true
+          fi
 
       - name: Run homelab_benchmark.sh dry-run
         run: |
-          ./homelab_benchmark.sh --dry-run || exit 1
+          # provide a dummy host (localhost) so the orchestrator doesn't exit early
+          TERM=dumb bin/homelab_benchmark.sh --dry-run localhost </dev/null || exit 1
 
       - name: Run local_benchmark.sh dry-run
         run: |
-          ./local_benchmark.sh --dry-run || exit 1
+          TERM=dumb bin/local_benchmark.sh --dry-run </dev/null || exit 1

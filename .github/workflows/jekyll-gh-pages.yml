@@ -1,0 +1,67 @@
+
+name: Build and deploy Jekyll site to GitHub Pages (official actions)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'release/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Cache gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies (if Gemfile present)
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle config set --local path 'vendor/bundle'
+            bundle install --jobs 4 --retry 3
+          else
+            echo "No Gemfile in docs/; skipping bundle install"
+          fi
+
+      - name: Build Jekyll site
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle exec jekyll build --destination _site
+          else
+            jekyll build --source . --destination _site || true
+          fi
+
+      - name: Deploy to GitHub Pages (peaceiris)
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/_site
+          publish_branch: gh-pages
+          allow_empty_commit: true
+
+      - name: Print deployed location
+        run: |
+          echo "Deployed to gh-pages branch from ${{ github.ref }}"

@@ -1,0 +1,5 @@
+title: Homelab Benchmark Docs
+description: Documentation for local and remote benchmarking workflows and the orchestrator
+baseurl: ""
+markdown: kramdown
+theme: jekyll-theme-slate

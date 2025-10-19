@@ -117,7 +117,7 @@ ssh client_user@client_ip "iperf3 -c server_ip -t 5"
 
 Execute the multi-host benchmark:
 ```bash
-./homelab_benchmark.sh
+bin/homelab_benchmark.sh
 ```
 
 **Expected execution flow:**
@@ -304,7 +304,7 @@ After successful completion, you'll have:
 
 ## Next Steps
 
-1. **Run initial benchmark**: `./homelab_benchmark.sh`
+1. **Run initial benchmark**: `bin/homelab_benchmark.sh`
 2. **Analyze results**: Review generated reports
 3. **Optimize configurations**: Based on performance characteristics  
 4. **Regular monitoring**: Re-run benchmarks after changes

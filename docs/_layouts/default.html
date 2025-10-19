@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ page.title }} - Homelab Benchmark</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sanitize.css@12.0.1/sanitize.css">
+    <style>
+      body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0}
+      .nav{width:220px;position:fixed;height:100%;background:#f6f8fa;padding:1rem;border-right:1px solid #ddd}
+      .content{margin-left:240px;padding:2rem}
+      a{color:#0366d6}
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <h3>Homelab Benchmark</h3>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/local.html">Local</a></li>
+        <li><a href="/remote.html">Remote</a></li>
+        <li><a href="/orchestrator.html">Orchestrator</a></li>
+        <li><a href="/troubleshooting.html">Troubleshooting</a></li>
+        <li><a href="/contributing.html">Contributing</a></li>
+      </ul>
+    </div>
+    <div class="content">
+      {{ content }}
+    </div>
+  </body>
+</html>
