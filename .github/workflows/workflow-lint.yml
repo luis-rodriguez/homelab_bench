@@ -1,0 +1,18 @@
+name: Workflow Lint
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  lint-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run workflow scanner
+        run: |
+          chmod +x scripts/check-workflows.sh
+          scripts/check-workflows.sh
