@@ -1,5 +1,4 @@
-
-name: Build and deploy Jekyll site to GitHub Pages (official actions)
+name: Build and deploy GitHub Pages
 
 on:
   push:
@@ -10,7 +9,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build-and-deploy:
+  build-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,7 +17,7 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Ruby
@@ -27,19 +26,11 @@ jobs:
           ruby-version: '3.1'
           bundler-cache: true
 
-      - name: Cache gems
-        uses: actions/cache@v4
-        with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-
-
       - name: Install dependencies (if Gemfile present)
         working-directory: ./docs
         run: |
-          if [ -f Gemfile ]; then
-            bundle config set --local path 'vendor/bundle'
+          if [ -f docs/Gemfile ]; then
+            cd docs
             bundle install --jobs 4 --retry 3
           else
             echo "No Gemfile in docs/; skipping bundle install"
@@ -48,20 +39,20 @@ jobs:
       - name: Build Jekyll site
         working-directory: ./docs
         run: |
+          # prefer bundle exec if Gemfile exists
           if [ -f Gemfile ]; then
             bundle exec jekyll build --destination _site
           else
             jekyll build --source . --destination _site || true
           fi
 
-      - name: Upload Pages artifact (official)
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path: ./docs/_site
 
-      - name: Deploy to GitHub Pages (official)
+      - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v1
 
-      - name: Print deployed location
-        run: |
-          echo "Pages deployed from branch ${{ github.ref }}"
+      - name: Post-deploy status
+        run: echo "Pages deployed from branch ${{ github.ref }}"
