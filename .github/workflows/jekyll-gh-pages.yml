@@ -1,4 +1,5 @@
-name: Build and deploy Jekyll site to GitHub Pages
+
+name: Build and deploy Jekyll site to GitHub Pages (official actions)
 
 on:
   push:
@@ -50,18 +51,17 @@ jobs:
           if [ -f Gemfile ]; then
             bundle exec jekyll build --destination _site
           else
-            # try system jekyll if installed on runner, fallback to no-op
             jekyll build --source . --destination _site || true
           fi
 
-      - name: Deploy to GitHub Pages (gh-pages branch)
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload Pages artifact (official)
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_site
-          publish_branch: gh-pages
-          allow_empty_commit: true
+          path: ./docs/_site
+
+      - name: Deploy to GitHub Pages (official)
+        uses: actions/deploy-pages@v1
 
       - name: Print deployed location
         run: |
-          echo "Deployed to GitHub Pages (branch: gh-pages) from ${{ github.ref }}"
+          echo "Pages deployed from branch ${{ github.ref }}"
