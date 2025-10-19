@@ -52,5 +52,4 @@ Changelog
 
 - Deleted duplicate workflow and canonicalized `jekyll-gh-pages.yml` to the official Pages actions.
 
-``` 
 
