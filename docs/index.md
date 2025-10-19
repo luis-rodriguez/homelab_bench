@@ -22,4 +22,4 @@ Sample reports and assets
 
 Legacy docs
 
-- Root documentation (moved): [Legacy docs](/docs/legacy/)
+- Root documentation (moved): [Legacy docs](legacy/)
