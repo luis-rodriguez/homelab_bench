@@ -19,7 +19,7 @@ SC_OUT=$(shellcheck --format=gcc bin/**/*.sh bin/*.sh scripts/**/*.sh scripts/*.
 # Keep a short trimmed summary (first 60 lines)
 SC_SUMMARY="$(echo "$SC_OUT" | head -n 60)"
 
-# Update SECURITY_AUDIT.md
+# Update SECURITY_AUDIT.md (write header, then append the shellcheck summary safely)
 cat > SECURITY_AUDIT.md <<EOF
 # Security Audit - homelab_benchmark.sh
 
@@ -31,11 +31,13 @@ This audit was generated/updated by CI. Below is the trimmed shellcheck output.
 
 ## ShellCheck summary (trimmed)
 
-$SC_SUMMARY
-
 EOF
 
-# Update SECURITY_AUDIT_LOCAL.md
+# append the (expanded) shellcheck summary safely
+printf '%s
+' "$SC_SUMMARY" >> SECURITY_AUDIT.md
+
+# Update SECURITY_AUDIT_LOCAL.md (write header, then append the shellcheck summary safely)
 cat > SECURITY_AUDIT_LOCAL.md <<EOF
 # Security Audit - local_benchmark.sh
 
@@ -47,9 +49,11 @@ This audit was generated/updated by CI. Below is the trimmed shellcheck output.
 
 ## ShellCheck summary (trimmed)
 
-$SC_SUMMARY
-
 EOF
+
+# append the (expanded) shellcheck summary safely
+printf '%s
+' "$SC_SUMMARY" >> SECURITY_AUDIT_LOCAL.md
 
 # Exit 0 (the workflow will commit changes if any)
 exit 0
