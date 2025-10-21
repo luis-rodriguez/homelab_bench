@@ -1,0 +1,31 @@
+# ShellCheck Configuration for homelab_bench
+# https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Enable following of sourced files (same as -x flag)
+# This allows shellcheck to analyze sourced modules
+# external-sources=true  # Handled via -x flag in workflows
+
+# Disable specific warnings that are expected in this project
+
+# SC1091: Not following: file not found
+# Reason: Some scripts source files dynamically or from relative paths
+disable=SC1091
+
+# SC2034: Variable appears unused
+# Reason: Many variables are used by sourced modules or passed to functions
+# We handle this on a case-by-case basis rather than disabling globally
+# disable=SC2034
+
+# SC2155: Declare and assign separately to avoid masking return values
+# Reason: Common pattern in our scripts, and we handle errors explicitly
+# disable=SC2155
+
+# Set shell to bash (most scripts use #!/usr/bin/env bash)
+shell=bash
+
+# Enable all optional checks
+# enable=all
+
+# Set severity threshold (error, warning, info, style)
+# In CI we use --severity=warning flag
+# severity=warning
