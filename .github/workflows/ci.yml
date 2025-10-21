@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+  push:
+    branches: [ "main", "master" ]
+
+# Restrict permissions of GITHUB_TOKEN for security
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck
+        run: |
+          shopt -s globstar
+          shellcheck -x bin/**/*.sh bin/*.sh scripts/**/*.sh scripts/*.sh
+
+  bash-syntax:
+    name: Bash syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bash -n (syntax check)
+        run: |
+          find . -type f -name '*.sh' -not -path './.git/*' -print0 | xargs -0 -n1 bash -n
+
+  smoke-tests:
+    name: Smoke tests (dry-run)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make bin scripts executable
+        run: |
+          if [ -d bin ]; then
+            chmod -R +x bin
+          fi
+
+      - name: Run homelab_benchmark.sh dry-run
+        run: |
+          TERM=dumb RESULTS_BASE_DIR="${GITHUB_WORKSPACE}/test_results" \
+            bin/homelab_benchmark.sh --dry-run localhost </dev/null
+
+      - name: Run local_benchmark.sh dry-run
+        run: |
+          TERM=dumb RESULTS_BASE_DIR="${GITHUB_WORKSPACE}/test_results" \
+            bin/local_benchmark.sh --dry-run </dev/null
+
+  workflow-lint:
+    name: Workflow validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run workflow scanner
+        run: |
+          chmod +x scripts/check-workflows.sh
+          scripts/check-workflows.sh

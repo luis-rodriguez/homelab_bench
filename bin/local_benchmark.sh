@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Configuration (can be overridden by environment or callers)
-RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
+RESULTS_DIR="${RESULTS_BASE_DIR:-${HOME}/homelab_bench_results}"
 LOGS_DIR="$RESULTS_DIR/logs"
 RAW_DIR="$RESULTS_DIR/raw"
 REPORTS_DIR="$RESULTS_DIR/reports"

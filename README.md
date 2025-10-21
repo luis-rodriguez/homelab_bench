@@ -185,6 +185,7 @@ This repository contains a number of internal documentation files and guidance. 
 
 - Docs site (Jekyll source): `docs/` — contains `index.md`, `local.md`, `remote.md`, `orchestrator.md`, and more.
 - Setup guide: `SETUP_GUIDE.md` — step-by-step environment setup and tool installation.
+- CI/Testing: `CI_TESTING.md` — GitHub Actions workflows and testing documentation.
 - Security and audits:
   - `SECURITY.md`
   - `SECURITY_POLICY.md`
