@@ -1,44 +1,72 @@
-name: Update security audits
+name: Security Audits
 
 on:
   push:
     branches: [ "master", "main", "release/**" ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+# Permissions needed to commit audit updates
+permissions:
+  contents: write
 
 jobs:
   update-audits:
+    name: Update Security Audits
     runs-on: ubuntu-latest
-    # ensure the job can push audit updates back to the repo
-    permissions:
-      contents: write
+    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Install shellcheck
-        run: sudo apt-get update -qq && sudo apt-get install -y shellcheck
+      - name: Setup shell environment
+        uses: ./.github/actions/setup-shell-environment
+        with:
+          install-shellcheck: 'true'
+          make-executable: 'true'
 
       - name: Run audit updater
         run: |
-          chmod +x scripts/update_audits.sh
+          echo "::group::Generating Security Audits"
           scripts/update_audits.sh
+          echo "::endgroup::"
 
-      - name: Commit changes (explicit)
+      - name: Display audit summary
+        run: |
+          echo "::group::Security Audit Summary"
+          if [[ -f SECURITY_AUDIT.md ]]; then
+            echo "=== SECURITY_AUDIT.md ===" 
+            head -n 40 SECURITY_AUDIT.md
+          fi
+          if [[ -f SECURITY_AUDIT_LOCAL.md ]]; then
+            echo "=== SECURITY_AUDIT_LOCAL.md ===" 
+            head -n 40 SECURITY_AUDIT_LOCAL.md
+          fi
+          echo "::endgroup::"
+
+      - name: Commit and push audit updates
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # configure git
+          # Configure git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Check for changes matching the audit files and commit them if present
+          # Add audit files
           git add SECURITY_AUDIT*.md || true
+          
+          # Check if there are changes to commit
           if git diff --staged --quiet; then
-            echo "No audit changes to commit"
+            echo "✓ No audit changes to commit"
           else
-            git commit -m "chore(audit): update security audit files"
-            # push back to the branch the workflow ran on
+            echo "Committing audit updates..."
+            git commit -m "chore(audit): update security audit files [skip ci]"
+            
+            # Push back to the branch
             git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}" "HEAD:${{ github.ref_name }}"
+            echo "✓ Audit updates pushed successfully"
           fi
