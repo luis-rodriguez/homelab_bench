@@ -1,15 +1,9 @@
 name: Smoke tests (dry-run)
 
+# This workflow is kept for backwards compatibility
+# Main CI is now in ci.yml
 on:
-  push:
-    branches: [ "main", "master" ]
-    paths:
-      - '**/*.sh'
-      - '.github/workflows/**'
-  pull_request:
-    paths:
-      - '**/*.sh'
-      - '.github/workflows/**'
+  workflow_dispatch:
 
 jobs:
   smoke:
@@ -38,13 +32,13 @@ jobs:
           for f in ./bin/*.sh ./scripts/*.sh; do
             [ -f "$f" ] || continue
             echo "bash -n $f" && bash -n "$f"
-          done || true
+          done
 
       - name: Run homelab_benchmark.sh dry-run
         run: |
           # provide a dummy host (localhost) so the orchestrator doesn't exit early
-          TERM=dumb bin/homelab_benchmark.sh --dry-run localhost </dev/null || exit 1
+          TERM=dumb RESULTS_BASE_DIR="${GITHUB_WORKSPACE}/test_results" bin/homelab_benchmark.sh --dry-run localhost </dev/null
 
       - name: Run local_benchmark.sh dry-run
         run: |
-          TERM=dumb bin/local_benchmark.sh --dry-run </dev/null || exit 1
+          TERM=dumb RESULTS_BASE_DIR="${GITHUB_WORKSPACE}/test_results" bin/local_benchmark.sh --dry-run </dev/null

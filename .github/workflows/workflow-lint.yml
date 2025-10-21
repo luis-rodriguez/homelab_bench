@@ -1,9 +1,9 @@
 name: Workflow Lint
 
+# This workflow is kept for backwards compatibility
+# Main CI is now in ci.yml
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/**'
+  workflow_dispatch:
 
 jobs:
   lint-workflows:
