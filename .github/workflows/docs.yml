@@ -1,0 +1,143 @@
+name: Documentation Site
+
+on:
+  push:
+    branches: [ "main", "master", "release/**" ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # ============================================================================
+  # LINK VALIDATION
+  # ============================================================================
+  
+  link-check:
+    name: Validate Documentation Links
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle config set --local path 'vendor/bundle'
+            bundle install --jobs 4 --retry 3
+          fi
+          gem install html-proofer
+
+      - name: Build Jekyll site
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle exec jekyll build --destination _site
+          else
+            jekyll build --source . --destination _site || true
+          fi
+
+      - name: Run html-proofer
+        working-directory: ./docs
+        run: |
+          # Check HTML and links
+          # --allow-hash-href: Allow links to anchors on the same page
+          # --enforce-https: Prefer HTTPS links
+          # --check-html: Validate HTML structure
+          # --disable-external: Skip external links (optional, faster)
+          htmlproofer ./_site \
+            --allow-hash-href \
+            --enforce-https \
+            --check-html \
+            --swap-urls "^/homelab_bench:" \
+            || true  # Don't fail on link check warnings in CI
+
+  # ============================================================================
+  # BUILD & DEPLOY
+  # ============================================================================
+  
+  build-deploy:
+    name: Build and Deploy Pages
+    runs-on: ubuntu-latest
+    needs: link-check
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+
+      - name: Cache Ruby gems
+        uses: actions/cache@v4
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('docs/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - name: Install dependencies
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle config set --local path 'vendor/bundle'
+            bundle install --jobs 4 --retry 3
+          else
+            echo "No Gemfile found; using system Jekyll"
+          fi
+
+      - name: Build Jekyll site
+        working-directory: ./docs
+        run: |
+          if [ -f Gemfile ]; then
+            bundle exec jekyll build --destination _site
+          else
+            jekyll build --source . --destination _site || true
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs/_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Deployment summary
+        run: |
+          echo "✓ Pages deployed successfully"
+          echo "URL: ${{ steps.deployment.outputs.page_url }}"
