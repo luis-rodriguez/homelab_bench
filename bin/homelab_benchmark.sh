@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RESULTS_DIR="/media/luis/sec-hdd/homelab_bench_results"
+RESULTS_DIR="${RESULTS_BASE_DIR:-${HOME}/homelab_bench_results}"
 DRY_RUN=false
 HOSTS=()
 

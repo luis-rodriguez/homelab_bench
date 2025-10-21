@@ -9,11 +9,11 @@ This documentation covers how to run and understand the local and remote benchma
 
 Links
 
-- [Local benchmark](local.md)
-- [Remote benchmark](remote.md)
-- [Orchestrator](orchestrator.md)
-- [Troubleshooting](troubleshooting.md)
-- [Contributing](contributing.md)
+- [Local benchmark](local.html)
+- [Remote benchmark](remote.html)
+- [Orchestrator](orchestrator.html)
+- [Troubleshooting](troubleshooting.html)
+- [Contributing](contributing.html)
  
 Sample reports and assets
 
@@ -22,4 +22,4 @@ Sample reports and assets
 
 Legacy docs
 
-- Root documentation (moved): [Legacy docs](/docs/legacy/)
+- Root documentation (moved): [Legacy docs](legacy/README.md)

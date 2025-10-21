@@ -7,12 +7,13 @@ update_reports() {
     local results_dir="$1"
     log "Adding local results to comparison reports..."
 
-    python3 - << 'PY'
+    python3 - "$results_dir" << 'PY'
 import json
 import re
+import sys
 from pathlib import Path
 
-results_dir = Path('/media/luis/sec-hdd/homelab_bench_results')
+results_dir = Path(sys.argv[1])
 raw_dir = results_dir / 'raw'
 reports_dir = results_dir / 'reports'
 reports_dir.mkdir(parents=True, exist_ok=True)
