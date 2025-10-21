@@ -1,8 +1,8 @@
 # Security Audit - homelab_benchmark.sh
 
 Release: v1.1
-Commit: e455416
-Last automated update: 2025-10-19 03:12:05Z (UTC)
+Commit: 993b8d3
+Last automated update: 2025-10-21 19:05:36Z (UTC)
 
 This audit was generated/updated by CI. Below is the trimmed shellcheck output.
 
@@ -25,7 +25,6 @@ bin/local/collect_sysinfo.sh:7:11: warning: raw_dir appears unused. Verify use (
 bin/local/collect_sysinfo.sh:8:11: warning: host appears unused. Verify use (or export if used externally). [SC2034]
 bin/local/monitor_power.sh:7:11: warning: raw_dir appears unused. Verify use (or export if used externally). [SC2034]
 bin/local/monitor_power.sh:8:11: warning: host appears unused. Verify use (or export if used externally). [SC2034]
-bin/local/update_reports.sh:7:11: warning: results_dir appears unused. Verify use (or export if used externally). [SC2034]
 bin/local_benchmark.sh:23:20: warning: DRY_RUN appears unused. Verify use (or export if used externally). [SC2034]
 bin/remote/remote_benchmark.sh:17:17: warning: HOSTNAME_OVERRIDE appears unused. Verify use (or export if used externally). [SC2034]
 bin/remote/remote_benchmark.sh:30:70: note: Note that A && B || C is not if-then-else. C may run when A is true. [SC2015]
