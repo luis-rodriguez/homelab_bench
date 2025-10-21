@@ -1,5 +1,9 @@
 # Homelab Benchmarking System
 
+[![Tests](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/test.yml/badge.svg)](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/test.yml)
+[![Docs](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/docs.yml/badge.svg)](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/docs.yml)
+[![Security](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/update-audits.yml/badge.svg)](https://github.com/luis-rodriguez/homelab_bench/actions/workflows/update-audits.yml)
+
 A comprehensive, non-destructive performance testing suite for Linux homelab environments.
 
 ## Overview
@@ -211,3 +215,8 @@ cd docs && bundle install && bundle exec jekyll serve
 ```
 
 If you want other links added here (for example direct links to `docs/orchestrator.md` anchors or example config files), tell me which pages to prioritize and I’ll add them.
+### Additional Documentation for Contributors
+
+For developers and contributors working on CI/CD:
+- **[WORKFLOWS_QUICK_REFERENCE.md](WORKFLOWS_QUICK_REFERENCE.md)** — Quick reference guide for GitHub Actions workflows
+- **[WORKFLOW_REFACTORING_SUMMARY.md](WORKFLOW_REFACTORING_SUMMARY.md)** — Details on workflow modernization and improvements
